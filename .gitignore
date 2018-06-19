@@ -1,0 +1,14 @@
+# Exclude all files/directories except the ones I want
+/*
+
+# .gitignore
+!.gitignore
+
+# Readme
+!README.md
+
+# Scripts
+!sim_poses.cpp
+
+# CMake
+!CMakeLists.txt
