@@ -377,9 +377,9 @@ Eigen::MatrixXd genDartPoseParams() {
 
     //krang->setPositions(allDartPoseParams.row(0));
 
-    return krang;
+    //return krang;
 
-    //return allDartPoseParams;
+    return allDartPoseParams;
 
 }
 
