@@ -92,167 +92,6 @@ double headingConstraint(const std::vector<double> &x, std::vector<double> &grad
   return heading-headingInit;
 }
 
-class Controller {
-    public:
-        /// Constructor
-        Controller(const SkeletonPtr& krang) : mKrang(krang){
-        }
-
-        void setNewPose() {
-            cout << "TODO: Use controller to change pose!\n";
-            //mKrang->setPositions();
-        }
-
-    protected:
-        //Krang
-        SkeletonPtr mKrang;
-
-};
-
-class MyWindow : public SimWindow {
-
-    public:
-
-        // Constructor
-        MyWindow(const WorldPtr& world) {
-            setWorld(world);
-            mController = dart::common::make_unique<Controller>(
-                mWorld->getSkeleton("krang"));
-
-        }
-
-        void timeStepping() override {
-            if (fmod( (int) (mWorld->getTime()*1000), 1000) == 0) {
-                mController->setNewPose();
-            }
-            SimWindow::timeStepping();
-        }
-
-    protected:
-        std::unique_ptr<Controller> mController;
-
-};
-
-int genFeasiblePoses() {
-
-    // Inputs go first (so you dont have to dig through code to change them)
-    // Maybe make this method accept inputs so that you can assign inputs in
-    // main method
-
-    int controlInputPoses = 1;
-
-    int cols = 0, rows = 0;
-    double buff[MAXBUFSIZE];
-
-    // I feel like there is a better way to read the file (if it fits it ships?)
-    // Read numbers (the pose params)
-    ifstream infile;
-    infile.open("../defaultInit.txt");
-    while(! infile.eof()) {
-        string line;
-        getline(infile, line);
-
-        int temp_cols = 0;
-        stringstream stream(line);
-        while(! stream.eof())
-            stream >> buff[cols*rows+temp_cols++];
-
-        if (temp_cols == 0)
-            continue;
-
-        if (cols == 0)
-            cols = temp_cols;
-
-        rows++;
-    }
-
-    infile.close();
-    rows--;
-
-    rows++;
-
-    // Populate matrix with numbers.
-    // Eigen matrix is transpose of read file
-    // every column is a pose, the rows are the pose params
-    // Heading, qBase, x, y, z, qLWheel, qRWheel, qWaist, qTorso, qKinect,
-    // qLArm0, ..., qLArm6, qRArm0, ..., qRArm6
-
-    int matRows = cols;
-    int matCols = rows;
-    Eigen::MatrixXd allInitPoseParams(matRows, matCols);
-    for (int i = 0; i < matRows; i++)
-        for (int j = 0; j < matCols; j++)
-            allInitPoseParams(i,j) = buff[matCols*i+j];
-
-    // Instantiate krang // There has to be a way to do relative filepaths in DART
-    // but until I figure that out I guess this works
-    dart::utils::DartLoader loader;
-    dart::dynamics::SkeletonPtr krang = loader.parseSkeleton("/home/apatel435/Desktop/09-URDF/Krang/Krang.urdf");
-    krang->setName("krang");
-
-    const int dof = (const int) krang->getNumDofs();
-    // dof should be 25
-    // What's the format
-    // first three axis-angle (aa)
-    // aa1, aa2, aa3, x, y, z, qLWheel, qRWheel, qWaist, qTorso, qKinect,
-    // qLArm0, ..., qLArm6, qRArm0, ..., qRArm6
-
-    int numInputPoses = matCols;
-
-    // Open output file to create isFeasible matrix
-    ofstream feasibleFile;
-    feasibleFile.open("feasiblePoses.txt");
-
-    int isFeasible = 0;
-
-    for (int pose = 0; pose < numInputPoses; pose++) {
-        Eigen::Matrix<double, 24, 1> initPoseParams;
-        for (int j = 0; j < matRows; j++) {
-            initPoseParams(j) = allInitPoseParams(j, pose);
-        }
-
-        double headingInit = initPoseParams(0);
-        double qBaseInit = initPoseParams(1);
-        Eigen::Matrix<double, 22, 1> unchangedValues; unchangedValues << initPoseParams.segment(2,22);
-
-        // Calculating the axis angle representation of orientation from headingInit and qBaseInit:
-        // RotX(pi/2)*RotY(-pi/2+headingInit)*RotX(-qBaseInit)
-        Eigen::Transform<double, 3, Eigen::Affine> baseTf = Eigen::Transform<double, 3, Eigen::Affine>::Identity();
-        baseTf.prerotate(Eigen::AngleAxisd(-qBaseInit,Eigen::Vector3d::UnitX())).prerotate(Eigen::AngleAxisd(-M_PI/2+headingInit,Eigen::Vector3d::UnitY())).prerotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX()));
-        Eigen::AngleAxisd aa(baseTf.matrix().block<3,3>(0,0));
-
-        // Now compile this data into dartPoseParams
-
-        Eigen::Matrix<double, 25, 1> dartPoseParams;
-        dartPoseParams << aa.angle()*aa.axis(), unchangedValues;
-
-        // Set position of krang
-        krang->setPositions(dartPoseParams);
-
-        // TODO:
-        // Need to simulate it so atleast can visually inspect feasibility
-
-        // TODO:
-        // Determine if pose is feasible
-
-        // Write out result to file in same order as input poses
-        // Should I write out the feasible pose itself?
-        feasibleFile << isFeasible << "\n";
-    }
-
-    feasibleFile.close();
-
-    return 0;
-}
-
-dart::dynamics::SkeletonPtr createFloor() {
-
-    dart::dynamics::SkeletonPtr floor = Skeleton::create("floor");
-
-    return floor;
-
-}
-
 Eigen::MatrixXd genDartPoseParams() {
 //dart::dynamics::SkeletonPtr createKrang() {
 
@@ -260,11 +99,9 @@ Eigen::MatrixXd genDartPoseParams() {
     int cols = 0, rows = 0;
     double buff[MAXBUFSIZE];
 
-    // I feel like there is a better way to read the file (if it fits it ships?)
     // Read numbers (the pose params)
     ifstream infile;
-    //infile.open("../defaultInit.txt");
-    infile.open("randomPoses500.txt");
+    infile.open("../randomPoses500.txt");
     while(! infile.eof() && rows <= controlInputPoses) {
         string line;
         getline(infile, line);
@@ -291,15 +128,19 @@ Eigen::MatrixXd genDartPoseParams() {
     // Heading, qBase, x, y, z, qLWheel, qRWheel, qWaist, qTorso, qKinect,
     // qLArm0, ..., qLArm6, qRArm0, ..., qRArm6
 
-    int matRows = cols;
-    int matCols = rows;
-    Eigen::MatrixXd allInitPoseParams(matRows, matCols);
-    for (int i = 0; i < matRows; i++)
-        for (int j = 0; j < matCols; j++)
-            allInitPoseParams(i,j) = buff[matCols*i+j];
+    int numInputPoses = rows;
+    int numParams = cols;
 
-    ofstream dartPoseParamsFile;
-    dartPoseParamsFile.open("dartPoseParams.txt");
+    Eigen::MatrixXd allInitPoseParamsFromFile(rows, cols);
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            allInitPoseParamsFromFile(i,j) = buff[cols*i+j];
+
+    Eigen::MatrixXd allInitPoseParams(cols, rows);
+    allInitPoseParams = allInitPoseParamsFromFile.transpose();
+
+    //ofstream dartPoseParamsFile;
+    //dartPoseParamsFile.open("dartPoseParams.txt");
 
     // Instantiate krang
     // There has to be a way to do relative filepaths in DART
@@ -314,14 +155,11 @@ Eigen::MatrixXd genDartPoseParams() {
     // aa1, aa2, aa3, x, y, z, qLWheel, qRWheel, qWaist, qTorso, qKinect,
     // qLArm0, ..., qLArm6, qRArm0, ..., qRArm6
 
-    //int numInputPoses = matCols;
-    int numInputPoses = 1;
-    Eigen::MatrixXd allDartPoseParams(matRows, matCols);
+    Eigen::MatrixXd allDartPoseParams(totalParams, numInputPoses);
 
-    int pose = 0;
     for (int pose = 0; pose < numInputPoses; pose++) {
         Eigen::Matrix<double, 24, 1> initPoseParams;
-        for (int j = 0; j < matRows; j++) {
+        for (int j = 0; j < cols; j++) {
             initPoseParams(j) = allInitPoseParams(j, pose);
         }
 
@@ -356,23 +194,23 @@ Eigen::MatrixXd genDartPoseParams() {
         //opt.optimize(q_vec, minf);
         //Eigen::Matrix<double, 25, 1> dartPoseParams(q_vec.data());
 
-        dartPoseParamsFile << dartPoseParams.transpose() << "\n";
+        //dartPoseParamsFile << dartPoseParams.transpose() << "\n";
 
         // Really Dirty i feel bad about writing this
         // TODO: Runtime error
-        //for (int param = 0; param < totalParams; param++) {
-        //    allDartPoseParams(param, pose) = dartPoseParams(param);
-        //}
+        for (int param = 0; param < totalParams; param++) {
+            allDartPoseParams(param, pose) = dartPoseParams(param);
+        }
 
         //TODO: compile all poses into one matrix
         // cout << allDartPoseParams.col(pose) << "\n";
         //allDartPoseParams.col(pose) = dartPoseParams;
 
-        //cout << allDartPoseParams;
+        //cout << dartPoseParams;
 
-        dartPoseParamsFile.close();
+        //dartPoseParamsFile.close();
 
-        krang->setPositions(dartPoseParams);
+        //krang->setPositions(dartPoseParams);
     }
 
     //krang->setPositions(allDartPoseParams.row(0));
@@ -380,6 +218,85 @@ Eigen::MatrixXd genDartPoseParams() {
     //return krang;
 
     return allDartPoseParams;
+
+}
+
+class Controller {
+    public:
+        /// Constructor
+        Controller(const SkeletonPtr& krang) : mKrang(krang){
+            allPoseParams = genDartPoseParams();
+            currPoseParams = Eigen::MatrixXd::Zero(allPoseParams.rows(), 1);
+        }
+
+        void setNewPose(int time, int scale) {
+            int index = time / (1000 * scale);
+            int timeStep = time % (1000 * scale);
+
+            // Need to solve issue of having a step that reverts back to zero
+            // pose and starts stepping through
+            if (timeStep == 0) {
+                currPoseParams = Eigen::MatrixXd::Zero(allPoseParams.rows(), 1);
+                mKrang->setPositions(currPoseParams);
+            }
+
+            if (index < allPoseParams.cols()) {
+                Eigen::MatrixXd finalPoseParams = allPoseParams.col(index);
+
+                //40 because we are stepping at 1000 intervals with 25 different
+                //pose params (1000/25 = 40)
+                int param = timeStep / (40 * scale);
+                int step = timeStep % (40 * scale);
+
+                currPoseParams.row(param) = finalPoseParams.row(param) * (step + 1) / (40 * scale);
+                mKrang->setPositions(currPoseParams);
+            }
+        }
+
+    protected:
+        //Krang
+        SkeletonPtr mKrang;
+        //Matrix of the poses
+        Eigen::MatrixXd allPoseParams;
+        Eigen::MatrixXd currPoseParams;
+};
+
+class MyWindow : public SimWindow {
+
+    public:
+
+        // Constructor
+        MyWindow(const WorldPtr& world) {
+            setWorld(world);
+            mController = dart::common::make_unique<Controller>(
+                mWorld->getSkeleton("krang"));
+
+        }
+
+        void timeStepping() override {
+            //Time in milliseconds
+            int worldTime = (int) (mWorld->getTime()*1000);
+
+            // Use controller to move to the next pose based on the time of
+            // simulation
+            // Time scale to make simulation seem slower/faster
+            // Higher value means slower simulation
+            int scale = 10;
+            mController->setNewPose(worldTime, scale);
+
+            SimWindow::timeStepping();
+        }
+
+    protected:
+        std::unique_ptr<Controller> mController;
+
+};
+
+dart::dynamics::SkeletonPtr createFloor() {
+
+    dart::dynamics::SkeletonPtr floor = Skeleton::create("floor");
+
+    return floor;
 
 }
 
@@ -413,9 +330,8 @@ int main(int argc, char* argv[]) {
 
     // TODO: Creating a runtime error when calling genDartPoseParams
     // Eigen::MatrixXd allDartPoseParams(2, 25);
-    //Eigen::MatrixXd allDartPoseParams;
-    //cout << genDartPoseParams();
-
+    Eigen::MatrixXd allDartPoseParams;
+    allDartPoseParams = genDartPoseParams();
 
     //Initial pose
     //for (int i = 0; i < 25; i++) {
@@ -448,7 +364,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < numBodies; i++) {
         bodyi = mKrang->getBodyNode(i);
         dart::dynamics::BodyNode* acBodyi = bodyi;
-        cout << bodyi->getName() << ": ";
+        //cout << bodyi->getName() << ": ";
         //cout << colRes::inCollision(acBodyi) << "\n";
         //if(acBodyi->isColliding()) {
         //for (int j = 0; j < numBodies; j++) {

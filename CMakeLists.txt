@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(sim_poses)
 
-find_package(DART 6.5.0 REQUIRED COMPONENTS utils-urdf gui)
+find_package(DART 6 REQUIRED COMPONENTS utils-urdf gui)
 
-add_compile_options(-std=c++11 -DCMAKE_BUILD_TYPE=Release)
+add_compile_options(-std=c++11)
 
 include_directories(${DART_INCLUDE_DIRS})
 
