@@ -100,8 +100,8 @@ Eigen::MatrixXd genDartPoseParams() {
 
     // Read numbers (the pose params)
     ifstream infile;
-    //infile.open("../randomPoses500.txt");
-    infile.open("../2_comPoses10.txt");
+    infile.open("../balancedPoses.txt");
+    //infile.open("../2_comPoses10.txt");
     while(! infile.eof() && rows <= controlInputPoses) {
         string line;
         getline(infile, line);
@@ -121,7 +121,6 @@ Eigen::MatrixXd genDartPoseParams() {
 
     infile.close();
     rows--;
-
     // Populate matrix with numbers.
     // Eigen matrix is transpose of read file
     // every column is a pose, the rows are the pose params
