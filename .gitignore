@@ -12,3 +12,6 @@
 
 # CMake
 !CMakeLists.txt
+
+# Test Data
+!2_comPoses10.txt

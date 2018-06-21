@@ -93,7 +93,6 @@ double headingConstraint(const std::vector<double> &x, std::vector<double> &grad
 }
 
 Eigen::MatrixXd genDartPoseParams() {
-//dart::dynamics::SkeletonPtr createKrang() {
 
     int controlInputPoses = 10;
     int cols = 0, rows = 0;
@@ -101,7 +100,8 @@ Eigen::MatrixXd genDartPoseParams() {
 
     // Read numbers (the pose params)
     ifstream infile;
-    infile.open("../randomPoses500.txt");
+    //infile.open("../randomPoses500.txt");
+    infile.open("../2_comPoses10.txt");
     while(! infile.eof() && rows <= controlInputPoses) {
         string line;
         getline(infile, line);
@@ -197,25 +197,12 @@ Eigen::MatrixXd genDartPoseParams() {
         //dartPoseParamsFile << dartPoseParams.transpose() << "\n";
 
         // Really Dirty i feel bad about writing this
-        // TODO: Runtime error
+        // TODO
         for (int param = 0; param < totalParams; param++) {
             allDartPoseParams(param, pose) = dartPoseParams(param);
         }
 
-        //TODO: compile all poses into one matrix
-        // cout << allDartPoseParams.col(pose) << "\n";
-        //allDartPoseParams.col(pose) = dartPoseParams;
-
-        //cout << dartPoseParams;
-
-        //dartPoseParamsFile.close();
-
-        //krang->setPositions(dartPoseParams);
     }
-
-    //krang->setPositions(allDartPoseParams.row(0));
-
-    //return krang;
 
     return allDartPoseParams;
 
@@ -229,7 +216,21 @@ class Controller {
             currPoseParams = Eigen::MatrixXd::Zero(allPoseParams.rows(), 1);
         }
 
+        // TODO: Maybe i can read more poses in the controller update method
+        // Controller Update Method
+        // Start with initial pose
+        // Move a joint every 100 time
+        // --- while this is happening check for collisions
+        // After moving to final pose go back to initial pose
+        // Read next line(pose) and repeat from process 3k
+        // Output can print out feasible poses with simple joint order movement
+        //
+        // Add keyboard input: i.e. press <key> to go back to its initial state
+        // and/or press <key> to move the joint
+        // Can/should be translated to hardware
+
         void setNewPose(int time, int scale) {
+
             int index = time / (1000 * scale);
             int timeStep = time % (1000 * scale);
 
@@ -251,6 +252,10 @@ class Controller {
                 currPoseParams.row(param) = finalPoseParams.row(param) * (step + 1) / (40 * scale);
                 mKrang->setPositions(currPoseParams);
             }
+        }
+
+        SkeletonPtr getKrang() {
+            return mKrang;
         }
 
     protected:
@@ -281,12 +286,31 @@ class MyWindow : public SimWindow {
             // simulation
             // Time scale to make simulation seem slower/faster
             // Higher value means slower simulation
-            int scale = 10;
+            int scale = 5;
             mController->setNewPose(worldTime, scale);
 
             SimWindow::timeStepping();
         }
 
+        // Keyboard input during simulation
+        void keyboard(unsigned char _key, int _x, int _y) {
+
+            switch (_key) {
+                case 'p': // Print current pose information
+                    cout << mController->getKrang()->getPositions().transpose() << "\n";
+                    break;
+                default:
+                    // Default keyboard control
+                    SimWindow::keyboard(_key, _x, _y);
+                    break;
+            }
+
+            //Keyboard control for Controller
+            //mController->keyboard(_key, _x, _y);
+
+            glutPostRedisplay();
+
+        }
     protected:
         std::unique_ptr<Controller> mController;
 
@@ -300,8 +324,7 @@ dart::dynamics::SkeletonPtr createFloor() {
 
 }
 
-//dart::dynamics::SkeletonPtr createKrang(Eigen::MatrixXd dartPoseParams) {
-dart::dynamics::SkeletonPtr createKrangOG() {
+dart::dynamics::SkeletonPtr createKrang() {
 
     // Instantiate krang
     // There has to be a way to do relative filepaths in DART
@@ -315,7 +338,7 @@ dart::dynamics::SkeletonPtr createKrangOG() {
     // qLArm0, ..., qLArm6, qRArm0, ..., qRArm6
 
     // Set position of krang
-    // krang->setPositions(dartPoseParams);
+    //krang->setPositions(dartPoseParams);
 
     return krang;
 }
@@ -328,27 +351,12 @@ int main(int argc, char* argv[]) {
     // load skeletons
     dart::dynamics::SkeletonPtr floor = createFloor();
 
-    // TODO: Creating a runtime error when calling genDartPoseParams
-    // Eigen::MatrixXd allDartPoseParams(2, 25);
     Eigen::MatrixXd allDartPoseParams;
     allDartPoseParams = genDartPoseParams();
 
-    //Initial pose
-    //for (int i = 0; i < 25; i++) {
-    //    allDartPoseParams
-    //}
+    dart::dynamics::SkeletonPtr mKrang = createKrang();
 
-    // TODO: Maybe i can read more poses in the controller update method
-    // Controller Update Method
-    // Start with initial pose
-    // Move a joint every 100 time
-    // --- while this is happening check for collisions
-    // After moving to final pose go back to initial pose
-    // Read next line(pose) and repeat from process 3k
-    // Output can print out feasible poses with simple joint order movement
-
-    //dart::dynamics::SkeletonPtr mKrang = createKrang(allDartPoseParams.row(0));
-    dart::dynamics::SkeletonPtr mKrang = createKrangOG();
+    mKrang->setPositions(allDartPoseParams.col(0));
 
     int numBodies = mKrang->getNumBodyNodes();
     dart::dynamics::BodyNodePtr bodyi;
