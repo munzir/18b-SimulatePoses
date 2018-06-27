@@ -14,4 +14,5 @@
 !CMakeLists.txt
 
 # Test Data
-!2_comPoses10.txt
+!randomfilteredPoses.txt
+!custom2comfilteredPoses.txt
