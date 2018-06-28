@@ -117,12 +117,15 @@ class MyWindow : public SimWindow {
         void timeStepping() override {
             //Time in milliseconds
             int worldTime = (int) (mWorld->getTime()*1000);
-            cout << "\rWorld Time: " << worldTime;
             // Use controller to move to the next pose based on the time of
             // simulation
             // Time scale to make simulation seem slower/faster
             // Higher value means slower simulation
             int scale = 5;
+
+            int poseNum = worldTime / (1000 * scale) + 1;
+            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum;
+
             mController->setNewPose(worldTime, scale);
 
             SimWindow::timeStepping();
@@ -159,7 +162,8 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename);
 // Main Method
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
-    string inputPosesFilename = "../custom2comfilteredPoses.txt";
+    // string inputPosesFilename = "../custom2comfilteredPoses.txt";
+    string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/09-URDF/Krang/Krang.urdf";
@@ -170,7 +174,9 @@ int main(int argc, char* argv[]) {
     // INPUT on below line (name of floor)
     string floorName = "floor";
 
+    cout << "Reading Input Poses ...\n";
     Eigen::MatrixXd inputPoses = readInputFileAsMatrix(inputPosesFilename);
+    cout << "|-> Done\n";
 
     // create and initialize the world
     WorldPtr world = World::create();
@@ -180,6 +186,7 @@ int main(int argc, char* argv[]) {
     SkeletonPtr mKrang = createKrang(fullRobotPath, robotName);
 
     mKrang->setPositions(inputPoses.row(0));
+    mKrang->setSelfCollisionCheck(true);
 
     // Add ground and robot to the world pointer
     world->addSkeleton(floor);
@@ -192,26 +199,27 @@ int main(int argc, char* argv[]) {
     // create a window and link it to the world
     MyWindow window(world, robotName, inputPoses);
 
-    glutInit(&argc, argv);
-    window.initWindow(960, 720, "Simulate Poses");
-    glutMainLoop();
-
     // TODO
     //int numBodies = mKrang->getNumBodyNodes();
     //BodyNodePtr bodyi;
-    //BodyNode* acBodyi = bodyi;
-    //double mi;
-    //double xmi;
-    //double ymi;
-    //double zmi;
+    ////BodyNode* acBodyi = bodyi;
 
     //bool isColliding = false;
-    //CollisionResult colRes;
+
+    //DARTCollisionDetector krangColDet();
+    //int index = 0;
+    //Skeleton skelmKrang = &mKrang;
+    //ShapeNode* krangShapeFrame = skelmKrang.getShapeNode(index);
+    //DARTCollisionObject krangColObj(krangColDet, krangShapeFrame);
+    //CollisionResult krangColResult();
+    //krangColResult.addObject(krangColObj);
+
+    //isColliding = krangColResult.isCollision();
 
     //for (int i = 0; i < numBodies; i++) {
     //    bodyi = mKrang->getBodyNode(i);
-    //    BodyNode* acBodyi = bodyi;
-    //    //cout << bodyi->getName() << ": ";
+
+    //    cout << bodyi->getName() << ": ";
     //    //cout << colRes::inCollision(acBodyi) << "\n";
     //    //if(acBodyi->isColliding()) {
     //    //for (int j = 0; j < numBodies; j++) {
@@ -220,11 +228,18 @@ int main(int argc, char* argv[]) {
     //        // that we can assume
     //        //if (i != j && bodyi.isColliding()) {
 
-    //            //isColliding = 1;
+    //              isColliding = krangColResult.isCollision();
 
     //        //}
     //    //}
     //}
+    //cout << isColliding << endl;
+
+    glutInit(&argc, argv);
+    window.initWindow(960, 720, "Simulate Poses");
+    glutMainLoop();
+
+    cout << endl;
 }
 
 SkeletonPtr createKrang(string fullRobotPath, string robotName) {
@@ -270,11 +285,25 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename) {
     infile.close();
     rows--;
 
+    string outShiminArms = "shimin" + inputPosesFilename + ".txt";
+    ofstream out_file(outShiminArms);
+
     // Populate matrix with numbers.
     Eigen::MatrixXd outputMatrix(rows, cols);
-    for (int i = 0; i < rows; i++)
-        for (int j = 0; j < cols; j++)
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
             outputMatrix(i,j) = buff[cols*i+j];
+            if (j > 10 && j < 17) {
+                out_file << buff[cols*i+j] << ", ";
+            } else if (j == 17) {
+                out_file << buff[cols*i+j] << endl;
+            } else if (j > 17 && j < 24) {
+                out_file << buff[cols*i+j] << ", ";
+            } else if (j == 24) {
+                out_file << buff[cols*i+j] << endl;
+            }
+        }
+    }
 
     return outputMatrix;
 }
