@@ -123,8 +123,12 @@ class MyWindow : public SimWindow {
             // Higher value means slower simulation
             int scale = 5;
 
+            CollisionResult result = mWorld->getLastCollisionResult();
+            bool collision = result.isCollision();
+            int numContacts = result.getNumContacts();
+
             int poseNum = worldTime / (1000 * scale) + 1;
-            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum;
+            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts;
 
             mController->setNewPose(worldTime, scale);
 
@@ -162,7 +166,7 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename);
 // Main Method
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
-    // string inputPosesFilename = "../custom2comfilteredPoses.txt";
+    //string inputPosesFilename = "../custom2comfilteredPoses.txt";
     string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
 
     // INPUT on below line (absolute path of robot)
@@ -185,8 +189,13 @@ int main(int argc, char* argv[]) {
     SkeletonPtr floor = createFloor(floorName);
     SkeletonPtr mKrang = createKrang(fullRobotPath, robotName);
 
+    // A safe pose
     mKrang->setPositions(inputPoses.row(0));
-    mKrang->setSelfCollisionCheck(true);
+    // An unsafe pose
+    mKrang->setPositions(inputPoses.row(7));
+
+    mKrang->enableSelfCollisionCheck();
+    mKrang->setAdjacentBodyCheck(true);
 
     // Add ground and robot to the world pointer
     world->addSkeleton(floor);
@@ -199,17 +208,46 @@ int main(int argc, char* argv[]) {
     // create a window and link it to the world
     MyWindow window(world, robotName, inputPoses);
 
+    /* Collision Snippet with Dart
+    CollisionDetector* detector = world->getConstraintSolver()->getCollisionDetector();
+    detector->detectCollision(true, true);
+    bool collision = false;
+    size_t collisionCount = detector->getNumContacts();
+    for (size_t i = 0; i < collisionCount; ++i) {
+        const Contact& contact = detector->getContact(i);
+        if (contact.bodyNode1.lock()->getSkeleton() == object || contact.bodyNode2.lock()->getSkeleton() == object) {
+            collision = true;
+            break;
+        }
+    }
+    if (collision) {
+        cout << "Krang in collision!" << endl;
+    }
+    */
+
+    CollisionResult result = world->getLastCollisionResult();
+    Contact contact;
+    //CollisionObject colObj1;
+    //CollisionObject colObj2;
+
+    for (int i = 0; i < result.getNumContacts(); i++) {
+        contact = result.getContact(i);
+        CollisionObject colObj1 = contact->collisionObject1;
+        //colObj2 = contact->collisionObject2;
+    }
+
+    bool collision = result.isCollision();
+    cout << collision << endl;
+
     // TODO
-    //int numBodies = mKrang->getNumBodyNodes();
-    //BodyNodePtr bodyi;
-    ////BodyNode* acBodyi = bodyi;
+    int numBodies = mKrang->getNumBodyNodes();
+    BodyNodePtr bodyi;
+    BodyNode* acBodyi = bodyi;
 
-    //bool isColliding = false;
-
-    //DARTCollisionDetector krangColDet();
+    //CollisionDetector krangColDet();
     //int index = 0;
-    //Skeleton skelmKrang = &mKrang;
-    //ShapeNode* krangShapeFrame = skelmKrang.getShapeNode(index);
+    //Skeleton skelmKrang = mKrang;
+    //ShapeNode krangShapeFrame = skelmKrang.getShapeNode(index);
     //DARTCollisionObject krangColObj(krangColDet, krangShapeFrame);
     //CollisionResult krangColResult();
     //krangColResult.addObject(krangColObj);
@@ -220,7 +258,7 @@ int main(int argc, char* argv[]) {
     //    bodyi = mKrang->getBodyNode(i);
 
     //    cout << bodyi->getName() << ": ";
-    //    //cout << colRes::inCollision(acBodyi) << "\n";
+    //    //cout << krangColResult.inCollision(acBodyi) << "\n";
     //    //if(acBodyi->isColliding()) {
     //    //for (int j = 0; j < numBodies; j++) {
     //        // is a body always colliding the ones attached to it?
