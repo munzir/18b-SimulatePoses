@@ -68,27 +68,34 @@ class Controller {
         // Can/should be translated to hardware
 
         void setNewPose(int time, int scale) {
-            int index = time / (1000 * scale);
-            int timeStep = time % (1000 * scale);
+            // int index = time / (1000 * scale);
+            // int timeStep = time % (1000 * scale);
 
-            // Need to solve issue of having a step that reverts back to zero
-            // pose and starts stepping through
-            if (timeStep == 0) {
-                currPoseParams = Eigen::MatrixXd::Zero(1, inputPoses.cols());
+            // // Need to solve issue of having a step that reverts back to zero
+            // // pose and starts stepping through
+            // if (timeStep == 0) {
+            //     currPoseParams = Eigen::MatrixXd::Zero(1, inputPoses.cols());
 
-                mKrang->setPositions(currPoseParams.transpose());
-            }
+            //     mKrang->setPositions(currPoseParams.transpose());
+            // }
 
-            if (index < inputPoses.rows()) {
-                Eigen::MatrixXd finalPoseParams = inputPoses.row(index);
-                //40 because we are stepping at 1000 intervals with 25 different
-                //pose params (1000/25 = 40)
-                int param = timeStep / (40 * scale);
-                int step = timeStep % (40 * scale);
+            // if (index < inputPoses.rows()) {
+            //     Eigen::MatrixXd finalPoseParams = inputPoses.row(index);
+            //     //40 because we are stepping at 1000 intervals with 25 different
+            //     //pose params (1000/25 = 40)
+            //     int param = timeStep / (40 * scale);
+            //     int step = timeStep % (40 * scale);
 
-                currPoseParams.col(param) = finalPoseParams.col(param) * (step + 1) / (40 * scale);
-                mKrang->setPositions(currPoseParams.transpose());
-            }
+            //     currPoseParams.col(param) = finalPoseParams.col(param) * (step + 1) / (40 * scale);
+            //     mKrang->setPositions(currPoseParams.transpose());
+            // }
+
+
+            Eigen::VectorXd q = inputPoses.row(0);
+            q(13) += time*0.01;
+            q.setZero(); q(14) += time*0.01;
+            mKrang->setPositions(q);
+
         }
 
         SkeletonPtr getKrang() {
@@ -101,6 +108,7 @@ class Controller {
         //Matrix of the poses
         Eigen::MatrixXd inputPoses;
         Eigen::MatrixXd currPoseParams;
+
 };
 
 // // MyWindow
@@ -108,7 +116,7 @@ class MyWindow : public SimWindow {
     public:
 
         // Constructor
-        MyWindow(const WorldPtr& world, string robotName, Eigen::MatrixXd inputPoses) {
+        MyWindow(const WorldPtr& world, string robotName, Eigen::MatrixXd inputPoses, CollisionGroupPtr group, CollisionOption& option) : mGroup(group), mOption(option) {
             setWorld(world);
             mController = make_unique<Controller>(
                 mWorld->getSkeleton(robotName), inputPoses);
@@ -123,14 +131,19 @@ class MyWindow : public SimWindow {
             // Higher value means slower simulation
             int scale = 5;
 
-            CollisionResult result = mWorld->getLastCollisionResult();
-            bool collision = result.isCollision();
-            int numContacts = result.getNumContacts();
+            // CollisionResult result = mWorld->getLastCollisionResult();
+            // bool collision = result.isCollision();
+            // int numContacts = result.getNumContacts();
 
-            int poseNum = worldTime / (1000 * scale) + 1;
-            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts;
+            // int poseNum = worldTime / (1000 * scale) + 1;
+            // cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts;
+
+            bool colliding = mGroup->collide(mOption);
+            cout << "\rSelf-Collision Detected: " << colliding;
 
             mController->setNewPose(worldTime, scale);
+            
+
 
             SimWindow::timeStepping();
         }
@@ -155,6 +168,8 @@ class MyWindow : public SimWindow {
     protected:
         unique_ptr<Controller> mController;
         string robotName;
+        CollisionGroupPtr mGroup;
+        CollisionOption& mOption;
 };
 
 // Function Prototypes
@@ -170,7 +185,7 @@ int main(int argc, char* argv[]) {
     string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
 
     // INPUT on below line (absolute path of robot)
-    string fullRobotPath = "/home/apatel435/Desktop/09-URDF/Krang/Krang.urdf";
+    string fullRobotPath = "/home/panda/myfolder/wholebodycontrol/09-URDF/Krang/Krang.urdf";
 
     // INPUT on below line (name of robot)
     string robotName = "krang";
@@ -183,30 +198,45 @@ int main(int argc, char* argv[]) {
     cout << "|-> Done\n";
 
     // create and initialize the world
-    WorldPtr world = World::create();
+    //    WorldPtr world = World::create();
+    dart::simulation::WorldPtr world(new dart::simulation::World);
 
     // load skeletons
     SkeletonPtr floor = createFloor(floorName);
     SkeletonPtr mKrang = createKrang(fullRobotPath, robotName);
 
     // A safe pose
-    mKrang->setPositions(inputPoses.row(0));
+    Eigen::VectorXd firstPose = inputPoses.row(0);
+    firstPose(8) += 0.3;
+    firstPose(16) = 0;
+    
+    mKrang->setPositions(firstPose);
+
     // An unsafe pose
-    mKrang->setPositions(inputPoses.row(7));
+    //mKrang->setPositions(inputPoses.row(7));
 
     mKrang->enableSelfCollisionCheck();
-    mKrang->setAdjacentBodyCheck(true);
+    mKrang->disableAdjacentBodyCheck();
 
     // Add ground and robot to the world pointer
     world->addSkeleton(floor);
     world->addSkeleton(mKrang);
+
+    auto constraintSolver = world->getConstraintSolver();
+    auto cd = DARTCollisionDetector::create();
+    constraintSolver->setCollisionDetector(cd);
+    auto group = constraintSolver->getCollisionGroup();
+    auto& option = constraintSolver->getCollisionOption();
+    auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+    option.collisionFilter = bodyNodeFilter;
+
 
     // no gravity
     Eigen::Vector3d gravity(0.0, 0.0, 0.0);
     world->setGravity(gravity);
 
     // create a window and link it to the world
-    MyWindow window(world, robotName, inputPoses);
+    MyWindow window(world, robotName, inputPoses, group, option);
 
     /* Collision Snippet with Dart
     CollisionDetector* detector = world->getConstraintSolver()->getCollisionDetector();
@@ -232,7 +262,7 @@ int main(int argc, char* argv[]) {
 
     for (int i = 0; i < result.getNumContacts(); i++) {
         contact = result.getContact(i);
-        CollisionObject colObj1 = contact->collisionObject1;
+        // CollisionObject colObj1 = contact->collisionObject1;
         //colObj2 = contact->collisionObject2;
     }
 
