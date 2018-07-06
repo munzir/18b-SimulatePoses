@@ -138,11 +138,12 @@ class MyWindow : public SimWindow {
             int scale = 5;
 
             CollisionResult result;
-            bool collision = mGroup->collide(mOption, &result);
+            mGroup->collide(mOption, &result);
+            bool collision = result.isCollision();
             int numContacts = result.getNumContacts();
 
             int poseNum = worldTime / (1000 * scale) + 1;
-            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << "\t";
+            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
 
             mController->setNewPose(worldTime, scale);
 
@@ -186,7 +187,7 @@ int main(int argc, char* argv[]) {
     string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
 
     // INPUT on below line (absolute path of robot)
-    string fullRobotPath = "/home/apatel435/Desktop/09-URDF/Krang/KrangCol.urdf";
+    string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
 
     // INPUT on below line (name of robot)
     string robotName = "krang";
@@ -232,14 +233,14 @@ int main(int argc, char* argv[]) {
 
     // A safe pose
     mKrang->setPositions(inputPoses.row(0));
-    collision = group->collide(option, &result);
+    group->collide(option, &result);
     collision = result.isCollision();
     numContacts = result.getNumContacts();
     cout << "Static Collision Check (safe) " << collision << " Contacts " << numContacts << endl;
 
     // A unsafe pose
     mKrang->setPositions(inputPoses.row(8));
-    collision = group->collide(option, &result);
+    group->collide(option, &result);
     collision = result.isCollision();
     numContacts = result.getNumContacts();
     cout << "Static Collision Check (unsafe) " << collision << " Contacts " << numContacts << endl;
