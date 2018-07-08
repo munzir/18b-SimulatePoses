@@ -183,8 +183,8 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename);
 // Main Method
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
-    //string inputPosesFilename = "../custom2comfilteredPoses.txt";
-    string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
+    string inputPosesFilename = "../custom2comfullbalance0.001000tolunsafe.txt";
+    //string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
@@ -195,9 +195,16 @@ int main(int argc, char* argv[]) {
     // INPUT on below line (name of floor)
     string floorName = "floor";
 
-    cout << "Reading Input Poses ...\n";
-    Eigen::MatrixXd inputPoses = readInputFileAsMatrix(inputPosesFilename);
-    cout << "|-> Done\n";
+    // Read input file
+    Eigen::MatrixXd inputPoses;
+    try {
+        cout << "Reading input poses ...\n";
+        inputPoses = readInputFileAsMatrix(inputPosesFilename);
+        cout << "|-> Done\n";
+    } catch (exception& e) {
+        cout << e.what() << endl;
+        return EXIT_FAILURE;
+    }
 
     // create and initialize the world
     WorldPtr world(new World);
@@ -295,6 +302,10 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename) {
     // Read numbers (the pose params)
     ifstream infile;
     infile.open(inputPosesFilename);
+
+    if (!infile.is_open()) {
+        throw runtime_error(inputPosesFilename + " can not be read, potentially does not exit!");
+    }
 
     int cols = 0, rows = 0;
     double buff[MAXBUFSIZE];
