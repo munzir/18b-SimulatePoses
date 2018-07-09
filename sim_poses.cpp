@@ -188,6 +188,7 @@ int main(int argc, char* argv[]) {
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
+    //string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/Krang.urdf";
 
     // INPUT on below line (name of robot)
     string robotName = "krang";
@@ -226,8 +227,8 @@ int main(int argc, char* argv[]) {
 
     // Collision Prep
     auto constraintSolver = world->getConstraintSolver();
-    auto cd = DARTCollisionDetector::create();
-    constraintSolver->setCollisionDetector(cd);
+    //auto cd = DARTCollisionDetector::create();
+    //constraintSolver->setCollisionDetector(cd);
     auto group = constraintSolver->getCollisionGroup();
     auto& option = constraintSolver->getCollisionOption();
     auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
@@ -246,14 +247,13 @@ int main(int argc, char* argv[]) {
     cout << "Static Collision Check (safe) " << collision << " Contacts " << numContacts << endl;
 
     // A unsafe pose
-    mKrang->setPositions(inputPoses.row(8));
+    mKrang->setPositions(inputPoses.row(1));
     group->collide(option, &result);
     collision = result.isCollision();
     numContacts = result.getNumContacts();
     cout << "Static Collision Check (unsafe) " << collision << " Contacts " << numContacts << endl;
 
-    //mKrang->setPositions(inputPoses.row(0));
-    mKrang->setPositions(inputPoses.row(8));
+    mKrang->setPositions(inputPoses.row(0));
 
     // create a window and link it to the world
     MyWindow window(world, robotName, inputPoses, group, option);
