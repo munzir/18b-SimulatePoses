@@ -14,6 +14,4 @@
 !CMakeLists.txt
 
 # Test Data
-!randomfilteredPoses.txt
-!custom2comfilteredPoses.txt
-!filteredPosesrandomOptPoses100001.000000*10e-3filter.txt
+!filteredPosesrandom6003fullbalance0.001000tolsafe2.000000*10e-3filter.txt

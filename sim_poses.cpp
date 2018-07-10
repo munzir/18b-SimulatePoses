@@ -87,9 +87,9 @@ class Controller {
                 int step = timeStep % (40 * scale);
 
                 // Below line moves joints one by one
-                currPoseParams.col(param) = finalPoseParams.col(param) * (step + 1) / (40 * scale);
+                //currPoseParams.col(param) = finalPoseParams.col(param) * (step + 1) / (40 * scale);
                 // Below line moves to final position
-                //currPoseParams = finalPoseParams;
+                currPoseParams = finalPoseParams;
                 mKrang->setPositions(currPoseParams.transpose());
             }
             // currPoseParams = inputPoses.row(index);
@@ -135,7 +135,7 @@ class MyWindow : public SimWindow {
             // simulation
             // Time scale to make simulation seem slower/faster
             // Higher value means slower simulation
-            int scale = 5;
+            int scale = 2;
 
             CollisionResult result;
             mGroup->collide(mOption, &result);
@@ -183,8 +183,7 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename);
 // Main Method
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
-    string inputPosesFilename = "../custom2comfullbalance0.001000tolunsafe.txt";
-    //string inputPosesFilename = "../filteredPosesrandomOptPoses100001.000000*10e-3filter.txt";
+    string inputPosesFilename = "../filteredPosesrandom6003fullbalance0.001000tolsafe2.000000*10e-3filter.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
