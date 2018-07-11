@@ -22,6 +22,8 @@ Reads an input file of poses and simulates these poses in DART
 Keybindings:
 
 - `Space`: Play/Pause simulation
-- `p` : Print the current pose in DART format
+- `i` : Print the current pose in DART format
         (aa1, aa2, aa3, x, y, z, qLWheel, qRWheel, qWaist, qTorso, qKinect,
          qLArm0, ..., qLArm6, qRArm0, ..., qRArm6)
+- `l` : View the next pose
+- `h` : View the previous pose

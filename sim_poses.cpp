@@ -54,13 +54,7 @@ class Controller {
             currPoseParams = Eigen::MatrixXd::Zero(1, inputPoses.cols());
         }
 
-        // TODO:
-        // Controller Update Method
-        // Start with initial pose
-        // Move a joint every 100 time
-        // --- while this is happening check for collisions
-        // After moving to final pose go back to initial pose
-        // Read next line(pose) and repeat from process 3k
+        // TODO: RRT implementation
         // Output can print out feasible poses with simple joint order movement
         //
         // Add keyboard input: i.e. press <key> to go back to its initial state
@@ -74,7 +68,11 @@ class Controller {
             // Need to solve issue of having a step that reverts back to zero
             // pose and starts stepping through
             if (timeStep == 0) {
-                currPoseParams = Eigen::MatrixXd::Zero(1, inputPoses.cols());
+                // Reset position to zero
+                //currPoseParams = Eigen::MatrixXd::Zero(1, inputPoses.cols());
+                // Set position to previous
+                //currPoseParams
+
 
                 mKrang->setPositions(currPoseParams.transpose());
             }
@@ -88,7 +86,8 @@ class Controller {
 
                 // Below line moves joints one by one
                 //currPoseParams.col(param) = finalPoseParams.col(param) * (step + 1) / (40 * scale);
-                // Below line moves to final position
+                // Below line moves to straight to final position from before
+                // position
                 currPoseParams = finalPoseParams;
                 mKrang->setPositions(currPoseParams.transpose());
             }
@@ -126,11 +125,14 @@ class MyWindow : public SimWindow {
             setWorld(world);
             mController = make_unique<Controller>(
                 mWorld->getSkeleton(robotName), inputPoses);
+
+            mInputPoses = inputPoses;
+            poseNum = 0;
         }
 
         void timeStepping() override {
             //Time in milliseconds
-            int worldTime = (int) (mWorld->getTime()*1000);
+            worldTime = (int) (mWorld->getTime()*1000);
             // Use controller to move to the next pose based on the time of
             // simulation
             // Time scale to make simulation seem slower/faster
@@ -139,13 +141,13 @@ class MyWindow : public SimWindow {
 
             CollisionResult result;
             mGroup->collide(mOption, &result);
-            bool collision = result.isCollision();
-            int numContacts = result.getNumContacts();
+            collision = result.isCollision();
+            numContacts = result.getNumContacts();
 
-            int poseNum = worldTime / (1000 * scale) + 1;
+            //poseNum = worldTime / (1000 * scale) + 1;
             cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
 
-            mController->setNewPose(worldTime, scale);
+            //mController->setNewPose(worldTime, scale);
 
             SimWindow::timeStepping();
         }
@@ -153,8 +155,24 @@ class MyWindow : public SimWindow {
         // Keyboard input during simulation
         void keyboard(unsigned char _key, int _x, int _y) {
             switch (_key) {
-                case 'p': // Print current pose information
+                case 'i': // Print current pose information
                     cout << mController->getKrang()->getPositions().transpose() << "\n";
+                    cout << endl;
+                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
+                    break;
+                case 'l': // go to next pose
+                    if (poseNum + 1 < mInputPoses.rows()) {
+                        mController->getKrang()->setPositions(mInputPoses.row(poseNum));
+                        poseNum = poseNum + 1;
+                    }
+                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
+                    break;
+                case 'h': // go to previous pose
+                    if (poseNum - 1 >= 0) {
+                        mController->getKrang()->setPositions(mInputPoses.row(poseNum));
+                        poseNum = poseNum - 1;
+                    }
+                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
                     break;
                 default:
                     // Default keyboard control
@@ -172,6 +190,11 @@ class MyWindow : public SimWindow {
         string robotName;
         CollisionGroupPtr mGroup;
         CollisionOption& mOption;
+        int worldTime;
+        int poseNum;
+        int collision;
+        int numContacts;
+        Eigen::MatrixXd mInputPoses;
 };
 
 // Function Prototypes
@@ -226,35 +249,12 @@ int main(int argc, char* argv[]) {
 
     // Collision Prep
     auto constraintSolver = world->getConstraintSolver();
-    //auto cd = DARTCollisionDetector::create();
-    //constraintSolver->setCollisionDetector(cd);
     auto group = constraintSolver->getCollisionGroup();
     auto& option = constraintSolver->getCollisionOption();
     auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
     option.collisionFilter = bodyNodeFilter;
-    CollisionResult result;
 
-    // Collision Testing
-    bool collision;
-    int numContacts;
-
-    // A safe pose
-    mKrang->setPositions(inputPoses.row(0));
-    group->collide(option, &result);
-    collision = result.isCollision();
-    numContacts = result.getNumContacts();
-    cout << "Static Collision Check (safe) " << collision << " Contacts " << numContacts << endl;
-
-    // A unsafe pose
-    mKrang->setPositions(inputPoses.row(1));
-    group->collide(option, &result);
-    collision = result.isCollision();
-    numContacts = result.getNumContacts();
-    cout << "Static Collision Check (unsafe) " << collision << " Contacts " << numContacts << endl;
-
-    mKrang->setPositions(inputPoses.row(0));
-
-    // create a window and link it to the world
+    // Create a window and link it to the world
     MyWindow window(world, robotName, inputPoses, group, option);
 
     glutInit(&argc, argv);
