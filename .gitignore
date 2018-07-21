@@ -7,11 +7,15 @@
 # Readme
 !README.md
 
+# CMake
+!CMakeLists.txt
+
 # Scripts
 !sim_poses.cpp
 
-# CMake
-!CMakeLists.txt
+# file_ops
+!file_ops.cpp
+!file_ops.hpp
 
 # Test Data
 !filteredPosesrandom6003fullbalance0.001000tolsafe2.000000*10e-3filter.txt
