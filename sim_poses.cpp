@@ -32,6 +32,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "file_ops.hpp"
+
 // Namespaces
 using namespace std;
 using namespace dart::collision;
@@ -41,9 +43,6 @@ using namespace dart::gui;
 using namespace dart::math;
 using namespace dart::simulation;
 using namespace dart::utils;
-
-// Defines
-#define MAXBUFSIZE ((int) 1e6)
 
 // Classes
 // // Controller
@@ -127,7 +126,7 @@ class MyWindow : public SimWindow {
                 mWorld->getSkeleton(robotName), inputPoses);
 
             mInputPoses = inputPoses;
-            poseNum = 0;
+            poseNum = -1;
         }
 
         void timeStepping() override {
@@ -145,7 +144,7 @@ class MyWindow : public SimWindow {
             numContacts = result.getNumContacts();
 
             //poseNum = worldTime / (1000 * scale) + 1;
-            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
+            cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum + 1 << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
 
             //mController->setNewPose(worldTime, scale);
 
@@ -162,17 +161,17 @@ class MyWindow : public SimWindow {
                     break;
                 case 'l': // go to next pose
                     if (poseNum + 1 < mInputPoses.rows()) {
+                        poseNum++;
                         mController->getKrang()->setPositions(mInputPoses.row(poseNum));
-                        poseNum = poseNum + 1;
                     }
-                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
+                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum + 1 << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
                     break;
                 case 'h': // go to previous pose
                     if (poseNum - 1 >= 0) {
+                        poseNum--;
                         mController->getKrang()->setPositions(mInputPoses.row(poseNum));
-                        poseNum = poseNum - 1;
                     }
-                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
+                    cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum  - 1 << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
                     break;
                 default:
                     // Default keyboard control
@@ -207,8 +206,9 @@ Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename);
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
     //string inputPosesFilename = "../filteredPosesrandom6003fullbalance0.001000tolsafe2.000000*10e-3filter.txt";
-    //string inputPosesFilename = "../poseTrajectoriesorderedrandom10fullbalance0.001000tolsafe.txt";
-    string inputPosesFilename = "../filteredPosesrandom22106fullbalance0.00100tolsafe";
+    string inputPosesFilename = "../poseTrajectoriesfullorderedfinalSet.txt";
+    //string inputPosesFilename = "../filteredPosesrandom22106fullbalance0.00100tolsafe";
+    //string inputPosesFilename = "../orderedfinalSet.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
@@ -296,60 +296,4 @@ SkeletonPtr createFloor(string floorName) {
     body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
     return floor;
-}
-
-// // Read file as Matrix
-Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename) {
-    // Read numbers (the pose params)
-    ifstream infile;
-    infile.open(inputPosesFilename);
-
-    if (!infile.is_open()) {
-        throw runtime_error(inputPosesFilename + " can not be read, potentially does not exit!");
-    }
-
-    int cols = 0, rows = 0;
-    double buff[MAXBUFSIZE];
-
-    while(! infile.eof()) {
-        string line;
-        getline(infile, line);
-
-        int temp_cols = 0;
-        stringstream stream(line);
-        while(! stream.eof())
-            stream >> buff[cols*rows+temp_cols++];
-        if (temp_cols == 0)
-            continue;
-
-        if (cols == 0)
-            cols = temp_cols;
-
-        rows++;
-    }
-
-    infile.close();
-    rows--;
-
-    string outShiminArms = "shimin" + inputPosesFilename + ".txt";
-    ofstream out_file(outShiminArms);
-
-    // Populate matrix with numbers.
-    Eigen::MatrixXd outputMatrix(rows, cols);
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            outputMatrix(i,j) = buff[cols*i+j];
-            if (j > 10 && j < 17) {
-                out_file << buff[cols*i+j] << ", ";
-            } else if (j == 17) {
-                out_file << buff[cols*i+j] << endl;
-            } else if (j > 17 && j < 24) {
-                out_file << buff[cols*i+j] << ", ";
-            } else if (j == 24) {
-                out_file << buff[cols*i+j] << endl;
-            }
-        }
-    }
-
-    return outputMatrix;
 }
