@@ -211,6 +211,7 @@ int main(int argc, char* argv[]) {
     //string inputPosesFilename = "../orderedfinalSet.txt";
     //string inputPosesFilename = "../finalSet.txt";
     string inputPosesFilename = "../poseTrajectoriesrfinalSet/interposeTraj1-2.txt";
+    string inputPosesFilename = "../rfinalSet.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
