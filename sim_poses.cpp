@@ -29,10 +29,9 @@
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 #include <dart/utils/urdf/urdf.hpp>
-#include <iostream>
-#include <fstream>
 
-#include "file_ops.hpp"
+#include "../18h-Util/convert_pose_formats.hpp"
+#include "../18h-Util/file_ops.hpp"
 
 // Namespaces
 using namespace std;
@@ -73,7 +72,7 @@ class Controller {
                 //currPoseParams
 
 
-                mKrang->setPositions(currPoseParams.transpose());
+                mKrang->setPositions(munzirToDart(currPoseParams.transpose()));
             }
 
             if (index < inputPoses.rows()) {
@@ -88,7 +87,7 @@ class Controller {
                 // Below line moves to straight to final position from before
                 // position
                 currPoseParams = finalPoseParams;
-                mKrang->setPositions(currPoseParams.transpose());
+                mKrang->setPositions(munzirToDart(currPoseParams.transpose()));
             }
             // currPoseParams = inputPoses.row(index);
             // int p = 15;
@@ -162,14 +161,14 @@ class MyWindow : public SimWindow {
                 case 'l': // go to next pose
                     if (poseNum + 1 < mInputPoses.rows()) {
                         poseNum++;
-                        mController->getKrang()->setPositions(mInputPoses.row(poseNum));
+                        mController->getKrang()->setPositions(munzirToDart(mInputPoses.row(poseNum)));
                     }
                     cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum + 1 << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
                     break;
                 case 'h': // go to previous pose
                     if (poseNum - 1 >= 0) {
                         poseNum--;
-                        mController->getKrang()->setPositions(mInputPoses.row(poseNum));
+                        mController->getKrang()->setPositions(munzirToDart(mInputPoses.row(poseNum)));
                     }
                     cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum  - 1 << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
                     break;
@@ -200,8 +199,6 @@ class MyWindow : public SimWindow {
 SkeletonPtr createKrang(string fullRobotPath, string robotName);
 SkeletonPtr createFloor(string floorName);
 
-Eigen::MatrixXd readInputFileAsMatrix(string inputPosesFilename);
-
 // Main Method
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
@@ -210,12 +207,12 @@ int main(int argc, char* argv[]) {
     //string inputPosesFilename = "../filteredPosesrandom22106fullbalance0.00100tolsafe";
     //string inputPosesFilename = "../orderedfinalSet.txt";
     //string inputPosesFilename = "../finalSet.txt";
-    string inputPosesFilename = "../poseTrajectoriesrfinalSet/interposeTraj1-2.txt";
-    string inputPosesFilename = "../rfinalSet.txt";
+    //string inputPosesFilename = "../poseTrajectoriesrfinalSet/interposeTraj1-2.txt";
+    //string inputPosesFilename = "../rfinalSet.txt";
+    string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
-    //string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/Krang.urdf";
 
     // INPUT on below line (name of robot)
     string robotName = "krang";
@@ -249,8 +246,11 @@ int main(int argc, char* argv[]) {
     world->addSkeleton(mKrang);
 
     // no gravity
-    Eigen::Vector3d gravity(0.0, 0.0, 0.0);
-    world->setGravity(gravity);
+    //Eigen::Vector3d gravity(0.0, 0.0, 0.0);
+    //world->setGravity(gravity);
+
+    //TODO
+    mKrang->setPositions(munzirToDart(inputPoses.row(0).transpose()));
 
     // Collision Prep
     auto constraintSolver = world->getConstraintSolver();
@@ -258,6 +258,13 @@ int main(int argc, char* argv[]) {
     auto& option = constraintSolver->getCollisionOption();
     auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
     option.collisionFilter = bodyNodeFilter;
+
+    CollisionResult result;
+    group->collide(option, &result);
+    bool collision = result.isCollision();
+    double numContacts = result.getNumContacts();
+
+    cout << "Safe Pose Collision: " << collision << endl;
 
     // Create a window and link it to the world
     MyWindow window(world, robotName, inputPoses, group, option);
@@ -279,13 +286,14 @@ SkeletonPtr createKrang(string fullRobotPath, string robotName) {
 }
 
 SkeletonPtr createFloor(string floorName) {
+
     SkeletonPtr floor = Skeleton::create(floorName);
 
     // Give the floor a body
     BodyNodePtr body = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
 
     // Give the body a shape
-    double floor_width = 7.0;
+    double floor_width = 10;
     double floor_height = 0.05;
     std::shared_ptr<BoxShape> box(
           new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
@@ -295,7 +303,7 @@ SkeletonPtr createFloor(string floorName) {
 
     // Put the body into position
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.translation() = Eigen::Vector3d(0.0, 0.0, floor_height+0.25);
+    tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height / 2.0 - 0.012);
     body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
     return floor;
