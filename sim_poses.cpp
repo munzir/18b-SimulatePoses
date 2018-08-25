@@ -206,10 +206,10 @@ int main(int argc, char* argv[]) {
     //string inputPosesFilename = "../poseTrajectoriesfullorderedfinalSet.txt";
     //string inputPosesFilename = "../filteredPosesrandom22106fullbalance0.00100tolsafe";
     //string inputPosesFilename = "../orderedfinalSet.txt";
-    //string inputPosesFilename = "../finalSet.txt";
+    string inputPosesFilename = "../finalSetMunzir.txt";
     //string inputPosesFilename = "../poseTrajectoriesrfinalSet/interposeTraj1-2.txt";
     //string inputPosesFilename = "../rfinalSet.txt";
-    string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
+    //string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
@@ -246,8 +246,8 @@ int main(int argc, char* argv[]) {
     world->addSkeleton(mKrang);
 
     // no gravity
-    //Eigen::Vector3d gravity(0.0, 0.0, 0.0);
-    //world->setGravity(gravity);
+    Eigen::Vector3d gravity(0.0, 0.0, 0.0);
+    world->setGravity(gravity);
 
     //TODO
     mKrang->setPositions(munzirToDart(inputPoses.row(0).transpose()));
