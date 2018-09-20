@@ -202,14 +202,10 @@ SkeletonPtr createFloor(string floorName);
 // Main Method
 int main(int argc, char* argv[]) {
     // INPUT on below line (input pose filename)
-    //string inputPosesFilename = "../filteredPosesrandom6003fullbalance0.001000tolsafe2.000000*10e-3filter.txt";
-    //string inputPosesFilename = "../poseTrajectoriesfullorderedfinalSet.txt";
-    //string inputPosesFilename = "../filteredPosesrandom22106fullbalance0.00100tolsafe";
-    //string inputPosesFilename = "../orderedfinalSet.txt";
-    //string inputPosesFilename = "../finalSet.txt";
     //string inputPosesFilename = "../poseTrajectoriesrfinalSet/interposeTraj1-2.txt";
-    //string inputPosesFilename = "../rfinalSet.txt";
-    string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
+    //string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
+    //string inputPosesFilename = "../interposeTraj1-2.txt";
+    string inputPosesFilename = "../hardware-balanced-posesmunzir.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
@@ -246,8 +242,8 @@ int main(int argc, char* argv[]) {
     world->addSkeleton(mKrang);
 
     // no gravity
-    //Eigen::Vector3d gravity(0.0, 0.0, 0.0);
-    //world->setGravity(gravity);
+    Eigen::Vector3d gravity(0.0, 0.0, 0.0);
+    world->setGravity(gravity);
 
     //TODO
     mKrang->setPositions(munzirToDart(inputPoses.row(0).transpose()));
