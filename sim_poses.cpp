@@ -38,7 +38,7 @@ using namespace std;
 using namespace dart::collision;
 using namespace dart::common;
 using namespace dart::dynamics;
-using namespace dart::gui;
+using namespace dart::gui::glut;
 using namespace dart::math;
 using namespace dart::simulation;
 using namespace dart::utils;
@@ -206,10 +206,11 @@ int main(int argc, char* argv[]) {
     //string inputPosesFilename = "../poseTrajectoriesfullorderedfinalSet.txt";
     //string inputPosesFilename = "../filteredPosesrandom22106fullbalance0.00100tolsafe";
     //string inputPosesFilename = "../orderedfinalSet.txt";
-    string inputPosesFilename = "../finalSetMunzir.txt";
+    //string inputPosesFilename = "../finalSetMunzir.txt";
     //string inputPosesFilename = "../poseTrajectoriesrfinalSet/interposeTraj1-2.txt";
     //string inputPosesFilename = "../rfinalSet.txt";
     //string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
+    string inputPosesFilename = "../random10anglebalance0.001000tolunsafe.txt";
 
     // INPUT on below line (absolute path of robot)
     string fullRobotPath = "/home/apatel435/Desktop/WholeBodyControlAttempt1/09-URDF/Krang/KrangVisualCollision.urdf";
