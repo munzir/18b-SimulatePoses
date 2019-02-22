@@ -30,8 +30,8 @@
 #include <dart/gui/gui.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 
-#include "../18h-Util/convert_pose_formats.hpp"
-#include "../18h-Util/file_ops.hpp"
+#include <krang-utils/convert_pose_formats.hpp>
+#include <krang-utils/file_ops.hpp>
 
 // Namespaces
 using namespace std;
@@ -155,6 +155,8 @@ class MyWindow : public SimWindow {
             switch (_key) {
                 case 'i': // Print current pose information
                     cout << mController->getKrang()->getPositions().transpose() << "\n";
+                    cout << endl;
+                    cout << mController->getKrang()->getCOM() - mController->getKrang()->getPositions().segment(3,3) << "\n";
                     cout << endl;
                     cout << "\rWorld Time: " << worldTime << " Pose: " << poseNum << " Collision: " << collision << " Contacts: " << numContacts << " \t ";
                     break;
