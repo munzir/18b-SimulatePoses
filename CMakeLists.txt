@@ -14,4 +14,4 @@ file(GLOB srcs "sim_poses.cpp"
     "../18h-Util/file_ops.cpp" "../18h-Util/file_ops.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
 
-target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES} krang-utils nlopt lapack)
